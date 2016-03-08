@@ -37,7 +37,7 @@ Waits until the captcha is either solved or an error occurred (indicated through
 captcha = api.solve(captcha_file)
 print(captcha.try_get_result())
 ```
-If already available, prints the captcha text, else `None`. Please note that while this code doesn't repeateately asks the API if the captcha was solved, the HTTP request is still sent synchronously, so this method isn't *really* non-blocking.
+If already available, prints the captcha text, else `None`. Please note that while this code doesn't repeatedly ask the API if the captcha was solved, the HTTP request is still sent synchronously, so this method isn't *really* non-blocking.
 
 #### Reporting a bad captcha
 ```python
