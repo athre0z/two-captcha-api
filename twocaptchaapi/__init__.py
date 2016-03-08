@@ -203,6 +203,7 @@ class Captcha(object):
             time.sleep(sleep_time)
         return result
 
+    @_rewrite_http_to_com_err
     def report_bad(self):
         """Reports to the server that the captcha was solved incorrectly."""
         if self._cached_result is None:
