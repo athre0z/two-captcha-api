@@ -2,6 +2,19 @@
 
 This library implements a simple to use wrapper around the 2Captcha.com API.
 
+### Installation
+From PyPi
+```
+pip install twocaptchaapi
+```
+
+From source
+```
+git clone https://github.com/athre0z/twocaptcha-api.git
+cd twocaptcha-api
+python setup.py install
+```
+
 ### Examples
 
 #### Initializing the API
