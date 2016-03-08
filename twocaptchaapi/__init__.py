@@ -1,9 +1,14 @@
 from __future__ import unicode_literals, print_function, absolute_import, division
 
-from HTMLParser import HTMLParser, HTMLParseError
 import requests
 import time
 import imghdr
+import sys
+
+if sys.version_info[0] == 2:
+    from HTMLParser import HTMLParser, HTMLParseError
+elif sys.version_info[0] == 3:
+    from html.parser import HTMLParser, HTMLParseError
 
 
 # ----------------------------------------------------------------------------------------------- #
