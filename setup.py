@@ -9,5 +9,8 @@ setup(
     license='MIT',
     author='Joel Höner (athre0z)',
     author_email='joel@zyantific.com',
-    description='Python API implementation for 2Captcha.com'
+    description='Python API implementation for 2Captcha.com',
+    install_requires=[
+        'requests>=2.9',
+    ],
 )

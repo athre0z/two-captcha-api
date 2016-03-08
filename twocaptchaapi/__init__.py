@@ -1,8 +1,9 @@
 from __future__ import unicode_literals, print_function, absolute_import, division
 
-
+from HTMLParser import HTMLParser, HTMLParseError
 import requests
 import time
+import imghdr
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -75,6 +76,7 @@ class TwoCaptchaApi(object):
 
     def __init__(self, api_key):
         self.api_key = api_key
+        self.html_parser = HTMLParser()
 
     def get(self, url, params, **kwargs):
         """Sends a HTTP GET, for low-level API interaction."""
@@ -118,28 +120,31 @@ class TwoCaptchaApi(object):
 
         https://2captcha.com/api-2captcha
         """
-        close_file = False
+
+        # If path was provided, load file.
         if type(file) == str:
-            close_file = True
-            file = open(file, 'rb')
+            with open(file, 'rb') as f:
+                raw_data = f.read()
+        else:
+            raw_data = file.read()
 
-        try:
-            text = self.post(
-                self.REQ_URL,
-                captcha_parameters or {},
-                files={'file': file}
-            ).text
+        # Detect image format.
+        file_ext = imghdr.what(None, h=raw_data)
 
-            # Success?
-            if '|' in text:
-                _, captcha_id = text.split('|')
-                return Captcha(self, captcha_id)
+        # Send request.
+        text = self.post(
+            self.REQ_URL,
+            captcha_parameters or {'method': 'post'},
+            files={'file': ('captcha.' + file_ext, raw_data)}
+        ).text
 
-            # Nope, failure.
-            raise OperationFailedError("Operation failed: %r" % (text,))
-        finally:
-            if close_file:
-                file.close()
+        # Success?
+        if '|' in text:
+            _, captcha_id = text.split('|')
+            return Captcha(self, captcha_id)
+
+        # Nope, failure.
+        raise OperationFailedError("Operation failed: %r" % (text,))
 
 
 class Captcha(object):
@@ -158,7 +163,7 @@ class Captcha(object):
         self._reported_bad = False
 
     @_rewrite_http_to_com_err
-    @_rewrite_to_format_err(ValueError)
+    @_rewrite_to_format_err(ValueError, HTMLParseError)
     def try_get_result(self):
         """
         Tries to obtain the captcha text. If the result is not yet available,
@@ -174,7 +179,7 @@ class Captcha(object):
 
         # Success?
         if '|' in text:
-            _, captcha_text = text.split('|')
+            _, captcha_text = self.api.html_parser.unescape(text).split('|')
             self._cached_result = captcha_text
             return captcha_text
 
@@ -191,7 +196,7 @@ class Captcha(object):
         Retries every `sleep_time` seconds.
         """
         while True:
-            print('Trying to obtain result ..')
+            # print('Trying to obtain result ..')
             result = self.try_get_result()
             if result is not None:
                 break
