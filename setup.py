@@ -10,6 +10,7 @@ setup(
     author='Joel Höner (athre0z)',
     author_email='joel@zyantific.com',
     description='Python API implementation for 2Captcha.com',
+    download_url='https://github.com/athre0z/twocaptcha-api/archive/v0.1.tar.gz',
     install_requires=[
         'requests>=2.9',
     ],
