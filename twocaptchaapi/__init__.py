@@ -5,10 +5,24 @@ import time
 import imghdr
 import sys
 
+
+# ----------------------------------------------------------------------------------------------- #
+# [Python version compatibility]                                                                  #
+# ----------------------------------------------------------------------------------------------- #
+
+
 if sys.version_info[0] == 2:
-    from HTMLParser import HTMLParser, HTMLParseError
+    from HTMLParser import HTMLParser
 elif sys.version_info[0] == 3:
-    from html.parser import HTMLParser, HTMLParseError
+    from html.parser import HTMLParser
+
+
+if sys.version_info[:2] >= (3, 5):
+    # Py3.5 and upwards provide a function directly in the root module.
+    from html import unescape
+else:
+    # For older versions, we use the bound method.
+    unescape = HTMLParser().unescape
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -81,7 +95,6 @@ class TwoCaptchaApi(object):
 
     def __init__(self, api_key):
         self.api_key = api_key
-        self.html_parser = HTMLParser()
 
     def get(self, url, params, **kwargs):
         """Sends a HTTP GET, for low-level API interaction."""
@@ -168,7 +181,7 @@ class Captcha(object):
         self._reported_bad = False
 
     @_rewrite_http_to_com_err
-    @_rewrite_to_format_err(ValueError, HTMLParseError)
+    @_rewrite_to_format_err(ValueError)
     def try_get_result(self):
         """
         Tries to obtain the captcha text. If the result is not yet available,
@@ -184,7 +197,7 @@ class Captcha(object):
 
         # Success?
         if '|' in text:
-            _, captcha_text = self.api.html_parser.unescape(text).split('|')
+            _, captcha_text = unescape(text).split('|')
             self._cached_result = captcha_text
             return captcha_text
 
