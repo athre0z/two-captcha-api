@@ -23,7 +23,7 @@ from twocaptchaapi import TwoCaptchaApi
 api = TwoCaptchaApi('<API KEY>')
 ```
 
-#### Solving a captcha blockingly
+#### Solving a captcha blocking
 ```python
 with open('/my/captcha/path.png', 'rb') as captcha_file:
     captcha = api.solve(captcha_file)
@@ -32,7 +32,7 @@ print(captcha.await_result())
 ```
 Waits until the captcha is either solved or an error occurred (indicated through an exception).
 
-#### Solve captcha "non-blockingly"
+#### Solve captcha "non-blocking"
 ```python
 captcha = api.solve(captcha_file)
 print(captcha.try_get_result())
