@@ -4,6 +4,8 @@ import requests
 import time
 import imghdr
 import sys
+import base64
+import binascii
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -127,33 +129,75 @@ class TwoCaptchaApi(object):
         """Obtains load statistics of the server."""
         return self.get(self.LOAD_URL, {}).text
 
+    def is_base64(self, string):
+        try:
+            base64.decodestring(string)
+            return True
+        except (binascii.Error):
+            return False
+
     @_rewrite_http_to_com_err
     @_rewrite_to_format_err(IndexError, ValueError)
     def solve(self, file, captcha_parameters=None):
         """
-        Queues a captcha for solving. `file` may either be a path or a file object.
+        Queues a captcha for solving. `file` may either be a path, a file object or a base64 string.
         Optional parameters for captcha solving may be specified in a `dict` via
         `captcha_parameters`, for valid values see section "Additional CAPTCHA parameters"
         in API documentation here:
-
         https://2captcha.com/api-2captcha
         """
-
-        # If path was provided, load file.
-        if type(file) == str:
-            with open(file, 'rb') as f:
-                raw_data = f.read()
+        if self.is_base64(file):
+            # Send request.
+            text = self.post(
+                self.REQ_URL,
+                data = {'key': self.api_key, 'method': 'base64', 'body': file}
+            ).text
         else:
-            raw_data = file.read()
+            # If path was provided, load file.
+            if type(file) == str:
+                with open(file, 'rb') as f:
+                    raw_data = f.read()
+            else:
+                raw_data = file.read()
 
-        # Detect image format.
-        file_ext = imghdr.what(None, h=raw_data)
+            # Detect image format.
+            file_ext = imghdr.what(None, h=raw_data)
 
+            # Send request.
+            text = self.post(
+                self.REQ_URL,
+                captcha_parameters or {'method': 'post'},
+                files={'file': ('captcha.' + file_ext, raw_data)}
+            ).text
+
+        # Success?
+        if '|' in text:
+            _, captcha_id = text.split('|')
+            return Captcha(self, captcha_id)
+
+        # Nope, failure.
+        raise OperationFailedError("Operation failed: %r" % (text,))
+
+    @_rewrite_http_to_com_err
+    @_rewrite_to_format_err(IndexError, ValueError)
+    def solve_googlev2(self, data_key, protected_url, captcha_parameters=None):
+        """
+        Queues a captcha for solving. `data_key` is the extracted string from the captcha page.
+        The field `protected_url` is the URL of the page after the captcha.
+        Optional parameters for captcha solving may be specified in a `dict` via
+        `captcha_parameters`, for valid values see section "Additional CAPTCHA parameters"
+        in API documentation here:
+        https://2captcha.com/api-2captcha
+        """
         # Send request.
-        text = self.post(
+        text = self.get(
             self.REQ_URL,
-            captcha_parameters or {'method': 'post'},
-            files={'file': ('captcha.' + file_ext, raw_data)}
+            params = {
+                'key': self.api_key, 
+                'method': 'userrecaptcha', 
+                'googlekey': data_key,
+                'pageurl': protected_url
+            }
         ).text
 
         # Success?
@@ -172,7 +216,6 @@ class Captcha(object):
         """
         Constructs a new captcha awaiting result. Instances should not be created
         manually, but using the `TwoCaptchaApi.solve` method.
-
         :type api: TwoCaptchaApi
         """
         self.api = api
