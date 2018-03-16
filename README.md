@@ -32,6 +32,13 @@ print(captcha.await_result())
 ```
 Waits until the captcha is either solved or an error occurred (indicated through an exception).
 
+The `solve` function also receives a Base64 string as input.
+```python
+image_as_base64 = '....'
+captcha = api.solve(image_as_base64)
+print(captcha.await_result())
+```
+
 #### Solve captcha "non-blocking"
 ```python
 captcha = api.solve(captcha_file)
@@ -45,6 +52,15 @@ result = captcha.await_result()
 if use_captcha_code(result) == 'failed':
     captcha.report_bad()
 ```
+
+#### Solve a Google ReCaptcha V2 "non-blocking"
+```python
+data_key = 'data_key taken from the captcha page...'
+protected_url = 'https://www.example.com/protected/page...'
+captcha = api.solve_googlev2(data_key, protected_url)
+print(captcha.await_result())
+```
+Waits until the captcha is either solved or an error occurred (indicated through an exception).
 
 #### Query account balance
 ```python

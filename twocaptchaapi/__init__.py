@@ -83,6 +83,29 @@ def _rewrite_to_format_err(*exception_types):
     return decorator
 
 
+def _is_base64(string):
+    """Validates if a string is a base64 one. Returns False otherwise."""
+    try:
+        base64.decodestring(string)
+        return True
+    except (binascii.Error):
+        return False
+
+
+def _captcha_from_response(text, two_captcha_api_object):
+    """
+    Takes a text from a captcha request and look for expected format. 
+    Raise OperationFailedError if the text does not comply. 
+    """
+
+    # Success?
+    if '|' in text:
+        _, captcha_id = text.split('|')
+        return Captcha(two_captcha_api_object, captcha_id)
+
+    # Nope, failure.
+    raise OperationFailedError("Operation failed: %r" % (text,))
+
 # ----------------------------------------------------------------------------------------------- #
 # [Public API]                                                                                    #
 # ----------------------------------------------------------------------------------------------- #
@@ -129,13 +152,6 @@ class TwoCaptchaApi(object):
         """Obtains load statistics of the server."""
         return self.get(self.LOAD_URL, {}).text
 
-    def is_base64(self, string):
-        try:
-            base64.decodestring(string)
-            return True
-        except (binascii.Error):
-            return False
-
     @_rewrite_http_to_com_err
     @_rewrite_to_format_err(IndexError, ValueError)
     def solve(self, file, captcha_parameters=None):
@@ -146,7 +162,7 @@ class TwoCaptchaApi(object):
         in API documentation here:
         https://2captcha.com/api-2captcha
         """
-        if self.is_base64(file):
+        if _is_base64(file):
             # Send request.
             text = self.post(
                 self.REQ_URL,
@@ -170,13 +186,7 @@ class TwoCaptchaApi(object):
                 files={'file': ('captcha.' + file_ext, raw_data)}
             ).text
 
-        # Success?
-        if '|' in text:
-            _, captcha_id = text.split('|')
-            return Captcha(self, captcha_id)
-
-        # Nope, failure.
-        raise OperationFailedError("Operation failed: %r" % (text,))
+        return _captcha_from_response(text, self)
 
     @_rewrite_http_to_com_err
     @_rewrite_to_format_err(IndexError, ValueError)
@@ -200,13 +210,7 @@ class TwoCaptchaApi(object):
             }
         ).text
 
-        # Success?
-        if '|' in text:
-            _, captcha_id = text.split('|')
-            return Captcha(self, captcha_id)
-
-        # Nope, failure.
-        raise OperationFailedError("Operation failed: %r" % (text,))
+        return _captcha_from_response(text, self)
 
 
 class Captcha(object):
